@@ -111,7 +111,7 @@ bin_data_new[167, -c(1:22)] <- bin_data_new[167, -c(1:22)] + bin_data_new[168, -
 bin_data[256,c(46:58)] <- bin_data[270,c(46:58)]
 
 
-# Concatenate site_name and address for duplicate site_names, both in bin_data
+# To to get rid of duplicate site_names and obtain unique identifiers, concatenate the "site_name" and "address" columns, both in bin_data
 # and in bin_data_new
 
 # 1)    FOR BIN_DATA
