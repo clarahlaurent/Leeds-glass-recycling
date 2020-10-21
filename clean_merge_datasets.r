@@ -2,9 +2,6 @@ library(tidyverse)
 library(pacman)
 library(rio)
 library(lubridate)
-library(scales)
-library(ggrepel)
-library(wesanderson)
 
 
 # Import bin data 2016-2018
