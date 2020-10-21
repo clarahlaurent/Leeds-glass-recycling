@@ -5,7 +5,7 @@ library(lubridate)
 
 
 # Import bin data 2016-2018
-bin_data <- as.data.frame(import("~/Desktop/Leeds_glass_recycling/Bring_sites_17.07.20.csv"))
+bin_data <- as.data.frame(import("~/Bring_sites_17.07.20.csv"))
 # drop last 2 rows and last 2 columns
 bin_data <- bin_data[-c(397, 398),]
 bin_data <- bin_data[-c(59, 60)]
@@ -22,7 +22,7 @@ bin_data[bin_data == ""] <- NA
 bin_data[,c(23:58)] <- as.numeric(unlist(bin_data[,c(23:58)]))
 
 #Add data for 2019
-bin_data_2019 <- import("~/Desktop/Leeds_glass_recycling/Bring_sites_19_to_20.csv")
+bin_data_2019 <- import("~/Leeds_glass_recycling/Bring_sites_19_to_20.csv")
 names(bin_data_2019) %>% 
   str_replace_all("\\s","_") %>% 
   tolower
@@ -34,7 +34,7 @@ bin_data_2019[23:34] <- apply(bin_data_2019[23:34], 2, gsub, pattern = "([0-9])\
 bin_data_2019[,c(23:34)] <- as.numeric(unlist(bin_data_2019[,c(23:34)]))
 
 #Add data for April 2020 onwards
-bin_data_new <- import("~/Desktop/Leeds_glass_recycling/Bring_sites_from_apr20.csv")
+bin_data_new <- import("~/Leeds_glass_recycling/Bring_sites_from_apr20.csv")
 names(bin_data_new) %>% 
   str_replace_all("\\s","_") %>% 
   tolower
