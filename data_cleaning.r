@@ -211,7 +211,7 @@ bin_data$location_type <- bin_data$location_type %>%
                     "Childrens Centre|Educational Facility" = "Childrens Centre/Educational Facility"))
 
 
-# Reshape and tidy using dates
+# Reshape and tidy using dates. "g" is for "gathered"
 bin_data_g <- bin_data %>%
   gather(key = "Date", value = "Glass_tonnages_kg", 19:78) %>%
   drop_na(Glass_tonnages_kg)
@@ -226,3 +226,90 @@ bin_data_g$Glass_tonnages_kg <- as.numeric(bin_data_g$Glass_tonnages_kg, na.rm =
 # Filtering out all rows with Glass_tonnages_kg == NA
 bin_data_g <- bin_data_g %>%
   filter(!is.na(Glass_tonnages_kg))
+
+
+
+# Import population data
+pop_data <- import("~/Desktop/Leeds_glass_recycling/Leeds_pop_ward18.csv")
+colnames(pop_data)[3] <- "Population"
+pop_data <- pop_data %>% 
+  mutate(Population = str_replace(Population, " ", ""))
+pop_data$Population <- as.numeric(pop_data$Population)
+
+# Import income data
+income_data <- import("~/Desktop/Leeds_glass_recycling/netannualincome20181.csv")
+names(income_data) %<>% stringr::str_replace_all("\\s","_") %>% tolower
+
+income_data <- income_data %>%
+  filter(local_authority_name == "Leeds")
+income_data <- as.tibble(income_data)
+colnames(income_data)[7] <- "net_annual_income"
+
+income_data <- income_data %>% 
+  mutate(net_annual_income = str_replace(net_annual_income, ",", ""))
+
+income_data %>%
+  mutate(net_annual_income = as.numeric(net_annual_income))
+
+
+# Problem: the income data is only showing "MSOA", which are ares different from
+# "ward". Need to convert each "MSOA" to matching ward name.
+# Import MSOA to ward conversion
+MSOA_to_ward <- import("~/Desktop/Leeds_glass_recycling/MSOA_to_ward.csv") 
+MSOA_to_ward$MSOA_name <- paste(MSOA_to_ward$V2, MSOA_to_ward$V3)
+
+# Merge wards from MSOAS in income data
+income_data$ward <- MSOA_to_ward$V5
+
+income_data <-  income_data %>%
+  group_by(ward) %>%
+  summarize(average_income = mean(as.numeric(net_annual_income)))
+
+# Create per_ward, table gathering interesting variables at ward level:
+# average income, population, if the ward is inner city or suburbs
+# to see if these variables influence the number of glass banks per ward
+per_ward <- bin_data %>%
+  group_by(ward) %>%
+  summarize(no_of_glass_banks = sum(no_of__glass_banks, na.rm = TRUE)) %>%
+  arrange(ward) %>%
+  mutate(population = pop_data$Population, 
+         average_income = income_data$average_income)
+
+
+# adding inner city / suburbs information
+inner_city <- per_ward %>%
+  filter(ward %in% c("Little London and Woodhouse",
+                     "Gipton and Harehills",
+                     "Burmantofts and Richmond Hill",
+                     "Hunslet and Riverside",
+                     "Beeston and Holbeck",
+                     "Armley",
+                     "Kirkstall",
+                     "Headingley and Hyde Park",
+                     "Chapel Allerton")) %>%
+  select(ward, location)
+
+`%!in%` = Negate(`%in%`)
+suburbs <- per_ward %>%
+  filter(ward %!in% c("Little London and Woodhouse",
+                      "Gipton and Harehills",
+                      "Burmantofts and Richmond Hill",
+                      "Hunslet and Riverside",
+                      "Beeston and Holbeck",
+                      "Armley",
+                      "Kirkstall",
+                      "Headingley and Hyde Park",
+                      "Chapel Allerton")) %>%
+  select(ward, location)
+
+# Creating a list, so when I use bind_rows a new column is created
+inner_suburbs <- list("inner_city" = inner_city, "suburbs" = suburbs)
+
+inner_suburbs2 <- inner_suburbs %>% 
+  bind_rows(.id = "location")
+
+per_ward <- per_ward %>% 
+  left_join(inner_suburbs2, by = "ward")
+
+bin_data_g <- bin_data_g %>% 
+  left_join(per_ward, by = "ward")
